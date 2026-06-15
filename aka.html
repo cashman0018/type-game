@@ -33,6 +33,19 @@
     @keyframes damageShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
     .damage-flash { animation: damageShake 0.3s ease-in-out; border-color: #ef4444 !important; }
     
+    /* ======== 單字輸入錯誤的專屬純左右震動動畫 ======== */
+    @keyframes errorShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    .error-shake {
+      animation: errorShake 0.3s ease-in-out;
+    }
+    /* ========================================================== */
+
     .graveyard-bg {
       background-color: #1a1a24;
       background-image: linear-gradient(to right, #242432 1px, transparent 1px), linear-gradient(to bottom, #242432 1px, transparent 1px);
@@ -49,7 +62,6 @@
       100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } 
     }
 
-    /* 新增子彈樣式 */
     .bullet {
       position: absolute;
       width: 12px;
@@ -62,7 +74,6 @@
       transform: translate(-50%, -50%);
     }
 
-    /* 新增波次文字動畫 */
     @keyframes wavePop {
       0% { transform: scale(0.5); opacity: 0; }
       15% { transform: scale(1.1); opacity: 1; }
@@ -101,14 +112,26 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-between bg-[#161622] px-4 py-3 border-2 border-black">
-            <div class="flex items-center gap-2"><span class="text-amber-500 font-bold text-sm pixel-font">COMBO</span></div>
-            <span id="combo" class="pixel-font text-base font-black text-amber-500">0</span>
-          </div>
+          <div class="flex flex-col gap-3 bg-[#161622] p-3 border-2 border-black shadow-md">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+              <span class="text-red-500 font-bold text-xs pixel-font">WAVE</span>
+              <span id="wave" class="pixel-font text-base font-black text-red-500">1</span>
+            </div>
+            
+            <div class="flex items-center justify-between border-b border-gray-800 pb-2 pt-0.5">
+              <span class="text-amber-500 font-bold text-xs pixel-font">KILLS</span>
+              <span id="liveKills" class="pixel-font text-sm font-black text-amber-500">0</span>
+            </div>
 
-          <div class="flex items-center justify-between bg-[#161622] px-4 py-3 border-2 border-black">
-            <div class="flex items-center gap-2"><span class="text-red-500 font-bold text-sm pixel-font">WAVE</span></div>
-            <span id="wave" class="pixel-font text-base font-black text-red-500">1</span>
+            <div class="mt-1">
+              <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 pixel-font mb-1">
+                <span>PROGRESS</span>
+                <span id="progressText">0/5</span>
+              </div>
+              <div class="w-full h-2.5 bg-black border border-stone-700 overflow-hidden">
+                <div id="progressBar" class="h-full bg-amber-600 transition-all duration-200" style="width: 0%;"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -119,7 +142,6 @@
           </div>
 
           <div class="relative h-[450px] border-4 border-black overflow-hidden graveyard-bg">
-            
             <svg id="laserSvg" width="100%" height="100%" viewBox="0 0 900 450" preserveAspectRatio="none" class="absolute inset-0 pointer-events-none z-15">
               <path id="pathLine" d="" fill="none" stroke="#333344" stroke-width="6" stroke-linejoin="miter"/>
             </svg>
@@ -178,8 +200,9 @@
           <h1 class="pixel-font text-red-600 text-4xl font-black tracking-wider mb-2">GAME OVER</h1>
           <p class="text-xs text-gray-400 tracking-widest mt-2 pixel-font">THE BASE HAS BEEN DESTROYED</p>
         </div>
-        <div class="bg-[#282836] border-4 border-black p-4 flex gap-8 text-sm">
+        <div class="bg-[#282836] border-4 border-black p-4 flex justify-center gap-12 text-sm">
           <div class="text-center"><span class="block text-gray-500 text-[10px] font-bold pixel-font">FINAL WAVE</span><span id="finalWave" class="text-xl font-black text-red-500 pixel-font">1</span></div>
+          <div class="text-center"><span class="block text-gray-500 text-[10px] font-bold pixel-font">TOTAL KILLS</span><span id="finalKills" class="text-xl font-black text-amber-500 pixel-font">0</span></div>
         </div>
         <button id="deathRestartBtn" class="pixel-font retro-btn px-6 py-3 bg-[#b91c1c] hover:bg-[#cc2222] text-white font-bold text-sm tracking-widest">RETRY</button>
       </div>
@@ -188,36 +211,65 @@
 
   <script>
   (function(){
+    // ==========================================
+    // 單字庫
+    // ==========================================
     const wordPool = {
-      easy: ["able", "acid", "actor", "adult", "agent", "ahead", "alike", "alive", "alley", "allow", "alone", "along", "angle", "angry", "ankle", "apple", "apron", "arena", "argue", "arise", "armed", "arrow", "asset", "audio", "awake", "award", "awful", "bacon", "badge", "badly", "baked", "baker", "basic", "basin", "basis", "bath", "beach", "beast", "began", "begin", "being", "belly", "below", "bench", "berry", "bible", "birth", "black", "blade", "blame", "blank", "blast", "blend", "blind", "block", "blond", "blood", "bloom", "board", "boast", "body", "bonus", "boost", "booth", "bored", "bound", "brain", "brake", "brass", "brave", "bread", "break", "brick", "bride", "brief", "bright", "bring", "broad", "broke", "brown", "brush", "build", "bunch", "burnt", "burst", "buyer", "cabin", "cable", "camel", "camp", "canal", "candy", "canoe", "cargo", "carry", "carve", "case", "catch", "cause", "cave", "cease", "chain", "chair", "chalk", "chaos", "charm", "chart", "chase", "cheap", "cheat", "check", "cheek", "cheer", "chess", "chest", "chief", "child", "chill", "chin", "china", "chips", "choir", "choke", "chose", "cigar", "civic", "claim", "clash", "clasp", "class", "clay", "clean", "clear", "clerk", "click", "cliff", "climb", "cling", "cloak", "clock", "close", "cloth", "cloud", "clown", "club", "coach", "coal", "coast", "coat", "code", "coin", "cold", "collar", "color", "colt", "comb", "come", "comet", "comic", "cope", "coral", "cord", "core", "cork"],
-      medium: ["abroad", "absorb", "accent", "accept", "access", "accord", "accuse", "achieve", "active", "actual", "adjust", "admire", "advice", "advise", "affair", "afford", "afraid", "agency", "agenda", "almost", "alpine", "always", "amaze", "amount", "anchor", "ancient", "animal", "annual", "answer", "anxiety", "anxious", "appeal", "appear", "arctic", "arrive", "artist", "aspect", "assert", "assess", "assist", "assume", "assure", "asthma", "athlete", "attach", "attack", "attain", "attend", "attract", "auburn", "avenue", "average", "backup", "baggage", "balloon", "bandage", "banquet", "barrier", "battery", "battle", "beacon", "beauty", "because", "become", "before", "beggar", "behave", "behind", "belief", "belong", "benefit", "besides", "betray", "beware", "beyond", "bicycle", "biology", "blanket", "blossom", "boiling", "border", "bottle", "bounce", "brainy", "branch", "breath", "breeze", "bridge", "bubble", "bucket", "budget", "buffalo", "bullet", "burden", "bureau", "burglar", "cabinet", "campus", "camera", "cancel", "cancer", "candle", "canvas", "canyon", "capable", "capital", "capsule", "captain", "capture", "caramel", "caravan", "carbon", "career", "careful", "cartoon", "catalog", "caution", "cavern", "ceiling", "century", "certain", "chamber", "channel", "chapter", "charity", "charter", "cheaply", "chimney", "cholera", "chronic", "circuit", "citizen", "clarity", "classic", "climate", "clinic", "cluster", "coastal", "cocoon", "college", "collide", "colonel", "command", "comment", "company", "compare", "compass", "compete", "complex", "comrade", "conceal", "concept", "concern", "concert", "concise", "condemn", "conduct", "confess", "confirm", "conflict", "connect"],
-      hard: ["absolute", "abundant", "academic", "accident", "accurate", "accustom", "activity", "actually", "addition", "adequate", "advocate", "ambition", "analysis", "ancestor", "announce", "apparent", "appetite", "approach", "approval", "argument", "artistic", "assembly", "athletic", "attitude", "audience", "autonomy", "backbone", "backyard", "bacteria", "baseline", "behavior", "boundary", "building", "campaign", "capacity", "carefully", "casualty", "category", "cellular", "ceremony", "chairman", "champion", "chemical", "childhood", "chocolate", "chronicle", "cigarette", "classicist", "clearance", "clinician", "coalition", "cognitive", "cohesive", "commerce", "community", "companion", "complaint", "component", "composite", "compound", "compress", "compromise", "computer", "concrete", "condition", "conductor", "conference", "confident", "confusion", "consensus", "constant", "consumer", "contract", "contrast", "convince", "corridor", "cosmetic", "creative", "credible", "critical", "cultural", "currency", "customer", "cylinder", "database", "daylight", "deadline", "decision", "decrease", "dedicate", "definite", "delicate", "delivery", "democrat", "designer", "desperate", "disaster", "discipline", "discount", "discover", "disease", "dispatch", "display", "distance", "distinct", "diversity", "district", "document", "domestic", "dominant", "donation", "dramatic", "dynamic", "economic", "edition", "election", "electric", "elegant", "element", "elevator", "emergency", "emotion", "emphasis", "empire", "employee", "employer", "encounter", "encourage", "endeavor", "energetic", "engineer", "enormous", "ensemble", "envelope", "epidemic", "equality", "equation", "equipped", "erosion", "eruption", "essential", "establish", "estimate", "eternity", "European", "evaluate", "everyday", "evidence", "exception", "exchange", "excitement", "exclusive", "excursion", "exercise", "exhaust"]
+      easy: [
+        "desk", "game", "hero", "king", "lion", "moon", "night", "ocean", 
+        "park", "rose", "star", "tree", "wind", "zone", "milk", "fish", 
+        "bird", "door", "jump", "swim", "fire", "water", "earth", "cloud", "rain"
+      ],
+      medium: [
+        "bridge", "camera", "doctor", "forest", "guitar", "jacket", "market", "monkey", 
+        "planet", "shadow", "silver", "spring", "summer", "winter", "purple", "yellow", 
+        "orange", "pencil", "window", "rocket", "castle", "dragon", "nigger", "palace", "knight"
+      ],
+      hard: [
+        "beautiful", "champion", "dangerous", "elephant", "festival", "hospital", "mountain", "computer", 
+        "dictionary", "tomorrow", "universe", "vacation", "waterfall", "keyboard", "dinosaur", "astronaut", 
+        "chocolate", "lightning", "umbrella", "butterfly", "adventure", "treasure", "fountain", "guardian", "nightmare"
+      ]
     };
 
+    // ==========================================
+    // 對應的中文翻譯庫
+    // ==========================================
     const translations = {
-      "able": "能夠", "acid": "酸的", "actor": "演員", "adult": "成人", "agent": "代理人", "ahead": "在前方", "alike": "相似的", "alive": "活著的", "alley": "小巷", "allow": "允許", "alone": "獨自的", "along": "沿著", "angle": "角度", "angry": "憤怒的", "ankle": "腳踝", "apple": "蘋果", "apron": "圍裙", "arena": "競技場", "argue": "爭論", "arise": "升起", "armed": "武裝的", "arrow": "箭", "asset": "資產", "audio": "音訊", "awake": "醒著的", "award": "獎項", "awful": "糟糕的", "bacon": "培根", "badge": "徽章", "badly": "糟糕地", "baked": "烘烤的", "baker": "麵包師", "basic": "基本的", "basin": "水盆", "basis": "基礎", "bath": "洗澡", "beach": "海灘", "beast": "野獸", "began": "開始", "begin": "開始", "being": "存在", "belly": "肚子", "below": "在下方", "bench": "長椅", "berry": "莓果", "bible": "聖經", "birth": "出生", "black": "黑色", "blade": "刀刃", "blame": "責怪", "blank": "空白的", "blast": "爆炸", "blend": "混合", "blind": "盲的", "block": "街區", "blond": "金髮的", "blood": "血液", "bloom": "開花", "board": "板子", "boast": "誇耀", "body": "身體", "bonus": "獎金", "boost": "促進", "booth": "攤位", "bored": "感到無聊的", "bound": "受束縛的", "brain": "大腦", "brake": "煞車", "brass": "黃銅", "brave": "勇敢的", "bread": "麵包", "break": "打破", "brick": "磚塊", "bride": "新娘", "brief": "簡短的", "bright": "明亮的", "bring": "帶來", "broad": "寬廣的", "broke": "破產的", "brown": "棕色", "brush": "刷子", "build": "建造", "bunch": "一束", "burnt": "燒焦的", "burst": "爆炸", "buyer": "買家", "cabin": "小木屋", "cable": "電纜", "camel": "駱駝", "camp": "露營", "canal": "運河", "candy": "糖果", "canoe": "獨木舟", "cargo": "貨物", "carry": "攜帶", "carve": "雕刻", "case": "案例", "catch": "接住", "cause": "原因", "cave": "洞穴", "cease": "停止", "chain": "鎖鏈", "chair": "椅子", "chalk": "粉筆", "chaos": "混難", "charm": "魅力", "chart": "圖表", "chase": "追逐", "cheap": "便宜的", "cheat": "欺騙", "check": "檢查", "cheek": "臉頰", "cheer": "歡呼", "chess": "西洋棋", "chest": "胸膛", "chief": "主要的", "child": "兒童", "chill": "寒冷", "chin": "下巴", "china": "瓷器", "chips": "洋芋片", "choir": "合唱團", "choke": "窒息", "chose": "選擇", "cigar": "雪茄", "civic": "市民的", "claim": "聲明", "clash": "衝突", "clasp": "緊握", "class": "班級", "clay": "黏土", "clean": "乾淨的", "clear": "清楚的", "clerk": "店員", "click": "點擊", "cliff": "懸崖", "climb": "攀爬", "cling": "緊貼", "cloak": "斗篷", "clock": "時鐘", "close": "關閉", "cloth": "布料", "cloud": "雲朵", "clown": "小丑", "club": "俱樂部", "coach": "教練", "coal": "煤炭", "coast": "海岸", "coat": "外套", "code": "密碼", "coin": "硬幣", "cold": "寒冷的", "collar": "衣領", "color": "顏色", "colt": "小馬", "comb": "梳子", "come": "來到", "comet": "彗星", "comic": "漫畫的", "cope": "應付", "coral": "珊瑚", "cord": "細繩", "core": "核心", "cork": "軟木塞"
+      // Easy
+      "desk": "書桌", "game": "遊戲", "hero": "英雄", "king": "國王", "lion": "獅子", 
+      "moon": "月亮", "night": "夜晚", "ocean": "海洋", "park": "公園", "rose": "玫瑰", 
+      "star": "星星", "tree": "樹木", "wind": "風", "zone": "區域", "milk": "牛奶", 
+      "fish": "魚", "bird": "鳥", "door": "門", "jump": "跳躍", "swim": "游泳", 
+      "fire": "火", "water": "水", "earth": "地球", "cloud": "雲朵", "rain": "下雨",
+
+      // Medium
+      "bridge": "橋樑", "camera": "相機", "doctor": "醫生", "forest": "森林", "guitar": "吉他", 
+      "jacket": "夾克", "market": "市場", "monkey": "猴子", "planet": "行星", "shadow": "影子", 
+      "silver": "銀色", "spring": "春天", "summer": "夏天", "winter": "冬天", "purple": "紫色", 
+      "yellow": "黃色", "orange": "柳橙", "pencil": "鉛筆", "window": "窗戶", "rocket": "火箭", 
+      "castle": "城堡", "dragon": "飛龍", "nigger": "尼哥", "palace": "宮殿", "knight": "騎士",
+
+      // Hard
+      "beautiful": "美麗的", "champion": "冠軍", "dangerous": "危險的", "elephant": "大象", "festival": "節日", 
+      "hospital": "醫院", "mountain": "山脈", "computer": "電腦", "dictionary": "字典", "tomorrow": "明天", 
+      "universe": "宇宙", "vacation": "假期", "waterfall": "瀑布", "keyboard": "鍵盤", "dinosaur": "恐龍", 
+      "astronaut": "宇航員", "chocolate": "巧克力", "lightning": "閃電", "umbrella": "雨傘", "butterfly": "蝴蝶", 
+      "adventure": "冒險", "treasure": "寶藏", "fountain": "噴泉", "guardian": "守護者", "nightmare": "噩夢"
     };
 
     const dom = {};
-    const domIds = ['gameScreen', 'track', 'pathLine', 'laserBubbleContainer', 'wordBox', 'typedInput', 'hpBar', 'hpText', 'combo', 'wave', 'restartBtn2', 'deathRestartBtn', 'gameOverOverlay', 'finalWave', 'pauseBtn', 'pauseIcon', 'pauseBtnText', 'pauseOverlay', 'heroSprite', 'startOverlay', 'startBtn', 'waveOverlay', 'waveBannerText'];
+    // 將新加的直立資訊欄 ID 補進綁定清單
+    const domIds = ['gameScreen', 'track', 'pathLine', 'laserBubbleContainer', 'wordBox', 'typedInput', 'hpBar', 'hpText', 'wave', 'restartBtn2', 'deathRestartBtn', 'gameOverOverlay', 'finalWave', 'finalKills', 'pauseBtn', 'pauseIcon', 'pauseBtnText', 'pauseOverlay', 'heroSprite', 'startOverlay', 'startBtn', 'waveOverlay', 'waveBannerText', 'liveKills', 'progressText', 'progressBar'];
     
     const VBW = 900, VBH = 450, DETECT_T = 0.99;
 
     const waypoints = [
-      {x: 900, y: 225}, 
-      {x: 780, y: 225},
-      {x: 780, y: 75},  
-      {x: 660, y: 75},
-      {x: 660, y: 375}, 
-      {x: 540, y: 375},
-      {x: 540, y: 75},  
-      {x: 420, y: 75},
-      {x: 420, y: 375}, 
-      {x: 300, y: 375},
-      {x: 300, y: 75},  
-      {x: 180, y: 75},
-      {x: 180, y: 225},
-      {x: 75,  y: 225}  
+      {x: 900, y: 225}, {x: 780, y: 225}, {x: 780, y: 75},  
+      {x: 660, y: 75},  {x: 660, y: 375}, {x: 540, y: 375},
+      {x: 540, y: 75},  {x: 420, y: 75},  {x: 420, y: 375}, 
+      {x: 300, y: 375}, {x: 300, y: 75},  {x: 180, y: 75},
+      {x: 180, y: 225}, {x: 75,  y: 225}  
     ];
 
     let pathSegments = [], totalPathLength = 0;
@@ -257,10 +309,12 @@
 
     const rand = arr => arr[Math.floor(Math.random() * arr.length)];
 
+    // 順序優化過的隨機抽字機制
     function getWordForGame(wave) {
       const r = Math.random();
-      if (wave >= 8) return r < 0.2 ? rand(wordPool.easy) : r < 0.6 ? rand(wordPool.medium) : rand(wordPool.hard);
-      if (wave >= 4) return r < 0.5 ? rand(wordPool.easy) : rand(wordPool.medium);
+      if (wave >= 10) return rand(wordPool.hard);
+      if (wave >= 7) return r < 0.2 ? rand(wordPool.easy) : r < 0.5 ? rand(wordPool.medium) : rand(wordPool.hard);
+      if (wave >= 3) return r < 0.4 ? rand(wordPool.easy) : rand(wordPool.medium);
       return rand(wordPool.easy);
     }
 
@@ -279,11 +333,12 @@
       bullets = [];
 
       state = {
-        hp: 100, maxHp: 100, combo: 0, kills: 0, wave: 1,
+        hp: 100, maxHp: 100, kills: 0, wave: 1,
+        errorIndex: -1,
         monsters: [], target: null, running: true, paused: false, lastTime: performance.now(),
         spawnTimer: 0, 
-        spawnInterval: 1200, // 初始生怪速度放慢一點點 (1.2秒一隻)        
-        monstersThisWave: 5, // 第一波維持 5 隻       
+        spawnInterval: 1200,      
+        monstersThisWave: 5,     
         spawnedThisWave: 0, 
         baseSpeed: 0.25,
         waveIntroActive: false
@@ -326,13 +381,23 @@
       }, 1500);
     }
 
+    // 更新 HUD：同時更新左側新增的直立資訊
     function updateHUD(){
       const pct = Math.max(0, state.hp / state.maxHp * 100);
       dom.hpBar.style.width = pct + '%';
       dom.hpBar.className = `h-full transition-all duration-100 ${pct > 50 ? 'bg-emerald-600' : pct > 20 ? 'bg-amber-600' : 'bg-red-700 animate-pulse'}`;
       dom.hpText.textContent = `${Math.max(0, Math.round(state.hp))}/100`;
-      dom.combo.textContent = state.combo;
       dom.wave.textContent = state.wave;
+
+      // 1. 更新左邊資訊欄的即時 KILLS 數據
+      if (dom.liveKills) dom.liveKills.textContent = state.kills;
+      
+      // 2. 更新左邊資訊欄的 Wave 進度條數據
+      if (dom.progressText && dom.progressBar) {
+        dom.progressText.textContent = `${state.spawnedThisWave}/${state.monstersThisWave}`;
+        const progressPct = (state.spawnedThisWave / state.monstersThisWave) * 100;
+        dom.progressBar.style.width = `${progressPct}%`;
+      }
     }
 
     function currentSpeed(){
@@ -375,6 +440,9 @@
       const m = { word, t: 0, el, label: el.lastElementChild, dying: false };
       placeMonster(m);
       state.monsters.push(m);
+      
+      // 生成怪物時，同步更新進度條
+      updateHUD();
       pickNextTarget();
     }
 
@@ -408,6 +476,9 @@
       let htmlOutput = Array.from(baseWord).map((char, i) => {
         if (i < typed.length) {
           return char === typed[i] ? `<span class="text-emerald-500 font-black border-b-2 border-emerald-500">${char}</span>` : `<span class="text-red-500 font-black bg-red-950/80 px-0.5 border border-red-600">${char}</span>`;
+        }
+        if (i === state.errorIndex) {
+          return `<span class="text-red-500 font-black bg-red-950/80 px-0.5 border border-red-600">${char}</span>`;
         }
         return `<span class="text-stone-400">${char}</span>`;
       }).join('');
@@ -452,17 +523,13 @@
       
       if (state.spawnedThisWave >= state.monstersThisWave && state.monsters.length === 0){
         state.wave++; 
-        
-        // 【修改核心】：改用平滑成長公式。每一波只多增加 1~2 隻左右
         state.monstersThisWave = 4 + Math.floor(state.wave * 1.2); 
-        
         state.spawnedThisWave = 0;
-        
-        // 【修改核心】：出怪速度放慢削減幅道，每次只快 40ms，極限速度限制在 450ms
         state.spawnInterval = Math.max(450, state.spawnInterval - 40);
         
         triggerWaveIntro(state.wave);
       }
+      updateHUD();
     }
 
     function loop(now){
@@ -489,7 +556,7 @@
         }
         
         if (m.t >= DETECT_T){
-          state.hp -= 15; state.combo = 0; dom.typedInput.value = '';
+          state.hp -= 15; dom.typedInput.value = '';
           dom.gameScreen.classList.add('damage-flash');
           setTimeout(() => dom.gameScreen.classList.remove('damage-flash'), 300);
           removeMonster(m);
@@ -497,7 +564,9 @@
           if (state.hp <= 0){
             updateHUD(); state.running = false; cancelAnimationFrame(rafId);
             dom.typedInput.disabled = true;
-            dom.finalWave.textContent = state.wave; dom.gameOverOverlay.style.display = 'flex';
+            dom.finalWave.textContent = state.wave; 
+            dom.finalKills.textContent = state.kills;
+            dom.gameOverOverlay.style.display = 'flex';
             return;
           }
         } else placeMonster(m);
@@ -524,6 +593,7 @@
 
         if (dist <= moveDist + 15) {
           triggerShatterEffect(targetX, targetY);
+          state.kills++; // 成功消滅，加擊殺數
           removeMonster(b.target);
           b.el.remove();
           bullets.splice(i, 1);
@@ -552,13 +622,39 @@
         state?.monsters.forEach(placeMonster);
       });
 
+      // ==========================================
+      // ★ 核心防呆與精準單字紅字機制
+      // ==========================================
       dom.typedInput.addEventListener('input', () => {
         if (!state?.running || state.paused || !state.target || state.waveIntroActive) return;
-        if (dom.typedInput.value === state.target.word) {
-          state.combo++;
-          fireBulletAt(state.target);
-          dom.typedInput.value = ''; updateHUD();
+        
+        const typed = dom.typedInput.value.toLowerCase();
+        const targetStr = state.target.word.toLowerCase();
+
+        if (targetStr.startsWith(typed)) {
+          state.errorIndex = -1; 
+          if (typed === targetStr) {
+            fireBulletAt(state.target);
+            dom.typedInput.value = ''; 
+            updateHUD();
+          }
+        } else {
+          state.errorIndex = typed.length - 1; 
+          
+          dom.wordBox.classList.remove('error-shake');
+          void dom.wordBox.offsetWidth; 
+          dom.wordBox.classList.add('error-shake');
+          
+          setTimeout(() => {
+            dom.wordBox.classList.remove('error-shake');
+            state.errorIndex = -1; 
+            renderSpectrumHighlight();
+          }, 300);
+
+          dom.typedInput.value = typed.slice(0, -1);
+          updateHUD();
         }
+        
         renderSpectrumHighlight();
       });
 
@@ -568,7 +664,7 @@
           const val = dom.typedInput.value.trim();
           dom.typedInput.value = '';
           if (val !== "" && (!state.target || val !== state.target.word)) {
-            state.combo = 0; dom.typedInput.classList.add('damage-flash');
+            dom.typedInput.classList.add('damage-flash');
             setTimeout(() => dom.typedInput.classList.remove('damage-flash'), 300);
             updateHUD(); renderSpectrumHighlight();
           }
