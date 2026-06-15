@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>卍煞氣ㄟ 英打aka怪物防衛戰卍</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { 
+      font-family: 'Noto Sans TC', monospace; 
+      background-color: #111116; 
+      color: #d1d5db; 
+      overflow-x: hidden; 
+    }
+    .pixel-font { font-family: 'Press Start 2P', monospace; }
+    
+    .retro-border {
+      border: 4px solid #000000;
+      box-shadow: 4px 4px 0px #222225;
+    }
+    .retro-btn {
+      border: 3px solid #000000;
+      box-shadow: 3px 3px 0px #000000;
+      transition: all 0.1s ease;
+    }
+    .retro-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0px #000000;
+    }
+
+    @keyframes damageShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+    .damage-flash { animation: damageShake 0.3s ease-in-out; border-color: #ef4444 !important; }
+    
+    .graveyard-bg {
+      background-color: #1a1a24;
+      background-image: linear-gradient(to right, #242432 1px, transparent 1px), linear-gradient(to bottom, #242432 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    
+    .pixel-particle { 
+      position: absolute; 
+      pointer-events: none; 
+      animation: particleBlow 0.5s steps(8) forwards; 
+    }
+    @keyframes particleBlow { 
+      0% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; } 
+      100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } 
+    }
+
+    /* 新增子彈樣式 */
+    .bullet {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background-color: #f59e0b;
+      border: 2px solid #000;
+      box-shadow: 0 0 8px #f59e0b;
+      z-index: 25;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+
+    /* 新增波次文字動畫 */
+    @keyframes wavePop {
+      0% { transform: scale(0.5); opacity: 0; }
+      15% { transform: scale(1.1); opacity: 1; }
+      30% { transform: scale(1); opacity: 1; }
+      85% { transform: scale(1); opacity: 1; filter: blur(0px); }
+      100% { transform: scale(1.3); opacity: 0; filter: blur(4px); }
+    }
+    .wave-banner-anim {
+      animation: wavePop 1.5s ease-in-out forwards;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-2 md:p-4 select-none">
+
+  <div class="w-full max-w-7xl bg-[#1e1e2a] border-[6px] border-black rounded-none overflow-hidden shadow-[8px_8px_0px_rgba(0,0,0,0.5)] relative">
+    <div class="h-3 w-full bg-[#cc5500]"></div>
+
+    <div id="gameScreen" class="p-3 md:p-6 flex flex-col gap-4 transition-all duration-300 relative">
+      <div class="flex flex-col lg:flex-row gap-4">
+        
+        <div class="w-full lg:w-64 bg-[#282836] border-4 border-black p-4 flex flex-col gap-4">
+          <div class="flex items-center gap-3 bg-[#161622] p-3 border-2 border-black">
+            <div class="w-12 h-12 bg-[#3a3a4a] border-2 border-black flex items-center justify-center rounded-none overflow-hidden shrink-0">
+              <svg class="w-10 h-10" viewBox="0 0 40 40">
+                <rect x="12" y="6" width="16" height="16" fill="#fca5a5"/><rect x="10" y="14" width="20" height="6" fill="#111"/><rect x="14" y="20" width="12" height="14" fill="#444"/><rect x="8" y="16" width="4" height="12" fill="#b91c1c"/><circle cx="16" cy="11" r="2" fill="#000"/><circle cx="24" cy="11" r="2" fill="#000"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div id="playerNameDisplay" class="text-xs text-amber-500 font-bold tracking-tight truncate pixel-font">PLAYER_01</div>
+              <div class="text-[11px] font-black text-slate-100 flex justify-between items-center mt-1">
+                <span class="text-red-500 font-bold">❤ HP</span><span id="hpText" class="font-bold pixel-font">100/100</span>
+              </div>
+              <div class="w-full h-3 bg-black border-2 border-black overflow-hidden mt-1">
+                <div id="hpBar" class="h-full bg-emerald-600 transition-all duration-100" style="width: 100%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between bg-[#161622] px-4 py-3 border-2 border-black">
+            <div class="flex items-center gap-2"><span class="text-amber-500 font-bold text-sm pixel-font">COMBO</span></div>
+            <span id="combo" class="pixel-font text-base font-black text-amber-500">0</span>
+          </div>
+
+          <div class="flex items-center justify-between bg-[#161622] px-4 py-3 border-2 border-black">
+            <div class="flex items-center gap-2"><span class="text-red-500 font-bold text-sm pixel-font">WAVE</span></div>
+            <span id="wave" class="pixel-font text-base font-black text-red-500">1</span>
+          </div>
+        </div>
+
+        <div class="flex-1 flex flex-col gap-3">
+          <div class="relative bg-[#161622] border-4 border-black py-3 px-5 flex items-center justify-between min-h-[76px] shadow-inner">
+            <div class="absolute top-1 left-4 text-[9px] text-gray-500 font-black tracking-widest pixel-font">TARGET_LOCK_ON</div>
+            <div id="wordBox" class="text-xl md:text-2xl font-black tracking-[3px] select-none transition-all mt-2 flex-1 leading-relaxed text-gray-200">READY...</div>
+          </div>
+
+          <div class="relative h-[450px] border-4 border-black overflow-hidden graveyard-bg">
+            
+            <svg id="laserSvg" width="100%" height="100%" viewBox="0 0 900 450" preserveAspectRatio="none" class="absolute inset-0 pointer-events-none z-15">
+              <path id="pathLine" d="" fill="none" stroke="#333344" stroke-width="6" stroke-linejoin="miter"/>
+            </svg>
+
+            <div class="absolute left-[51px] top-[225px] transform -translate-y-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
+              <div id="heroSprite" class="w-12 h-12 bg-transparent flex items-center justify-center relative">
+                <svg class="w-12 h-12" viewBox="0 0 40 40">
+                  <rect x="10" y="8" width="14" height="14" fill="#fde047"/><rect x="8" y="16" width="18" height="6" fill="#111"/><rect x="12" y="22" width="10" height="12" fill="#1e3a8a"/><rect x="22" y="16" width="10" height="3" fill="#dc2626"/><rect x="30" y="13" width="3" height="9" fill="#e2e8f0"/><circle cx="14" cy="12" r="1.5" fill="#000"/><circle cx="20" cy="12" r="1.5" fill="#000"/>
+                </svg>
+              </div>
+              <div class="px-1.5 py-0.5 bg-black text-[8px] text-amber-500 pixel-font mt-1 border border-amber-500">BASE</div>
+            </div>
+
+            <div id="track" class="absolute inset-0 z-10 pointer-events-none"></div>
+            <div id="laserBubbleContainer" class="absolute inset-0 z-20 pointer-events-none"></div>
+
+            <div id="pauseOverlay" class="absolute inset-0 bg-black/80 hidden flex-col items-center justify-center gap-2 z-30">
+              <div class="pixel-font text-lg font-black tracking-widest text-white uppercase">PAUSED</div>
+              <p class="text-[11px] text-gray-400 pixel-font">PRESS RESUME TO CONTINUE</p>
+            </div>
+
+            <div id="waveOverlay" class="absolute inset-0 bg-black/40 hidden flex-col items-center justify-center z-25 pointer-events-none">
+              <div id="waveBannerText" class="pixel-font text-3xl md:text-4xl font-black text-amber-500 tracking-widest drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]">WAVE 1</div>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+              <input id="typedInput" type="text" placeholder="輸入單字消滅迎面而來的怪物..." 
+                     class="w-full bg-[#161622] border-4 border-black focus:border-amber-500 rounded-none px-4 py-3 text-white font-bold tracking-wider focus:outline-none placeholder-gray-600 transition-all text-sm shadow-inner" 
+                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+            </div>
+            
+            <div class="flex gap-2 justify-end sm:justify-start">
+              <button id="pauseBtn" class="retro-btn px-4 py-3 bg-[#3a3a4a] hover:bg-[#4a4a5a] text-white font-bold flex items-center justify-center gap-1.5 text-sm">
+                <i data-lucide="pause" id="pauseIcon" class="w-4 h-4"></i><span id="pauseBtnText">PAUSE</span>
+              </button>
+              <button id="restartBtn2" class="retro-btn px-4 py-3 bg-[#b91c1c] hover:bg-[#cc2222] text-white font-bold flex items-center justify-center gap-1.5 text-sm">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i><span>RESTART</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="startOverlay" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center gap-6 z-50">
+        <div class="text-center">
+          <h1 class="pixel-font text-amber-500 text-3xl md:text-4xl font-black tracking-wider mb-2 animate-bounce">怪物防衛戰</h1>
+          <p class="text-xs text-gray-400 tracking-widest mt-2 pixel-font">READY YOUR KEYBOARD, DEFENDER</p>
+        </div>
+        <button id="startBtn" class="pixel-font retro-btn px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base tracking-widest">START GAME</button>
+      </div>
+
+      <div id="gameOverOverlay" class="absolute inset-0 bg-black/95 hidden flex-col items-center justify-center gap-6 z-50">
+        <div class="text-center">
+          <h1 class="pixel-font text-red-600 text-4xl font-black tracking-wider mb-2">GAME OVER</h1>
+          <p class="text-xs text-gray-400 tracking-widest mt-2 pixel-font">THE BASE HAS BEEN DESTROYED</p>
+        </div>
+        <div class="bg-[#282836] border-4 border-black p-4 flex gap-8 text-sm">
+          <div class="text-center"><span class="block text-gray-500 text-[10px] font-bold pixel-font">FINAL WAVE</span><span id="finalWave" class="text-xl font-black text-red-500 pixel-font">1</span></div>
+        </div>
+        <button id="deathRestartBtn" class="pixel-font retro-btn px-6 py-3 bg-[#b91c1c] hover:bg-[#cc2222] text-white font-bold text-sm tracking-widest">RETRY</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    const wordPool = {
+      easy: ["able", "acid", "actor", "adult", "agent", "ahead", "alike", "alive", "alley", "allow", "alone", "along", "angle", "angry", "ankle", "apple", "apron", "arena", "argue", "arise", "armed", "arrow", "asset", "audio", "awake", "award", "awful", "bacon", "badge", "badly", "baked", "baker", "basic", "basin", "basis", "bath", "beach", "beast", "began", "begin", "being", "belly", "below", "bench", "berry", "bible", "birth", "black", "blade", "blame", "blank", "blast", "blend", "blind", "block", "blond", "blood", "bloom", "board", "boast", "body", "bonus", "boost", "booth", "bored", "bound", "brain", "brake", "brass", "brave", "bread", "break", "brick", "bride", "brief", "bright", "bring", "broad", "broke", "brown", "brush", "build", "bunch", "burnt", "burst", "buyer", "cabin", "cable", "camel", "camp", "canal", "candy", "canoe", "cargo", "carry", "carve", "case", "catch", "cause", "cave", "cease", "chain", "chair", "chalk", "chaos", "charm", "chart", "chase", "cheap", "cheat", "check", "cheek", "cheer", "chess", "chest", "chief", "child", "chill", "chin", "china", "chips", "choir", "choke", "chose", "cigar", "civic", "claim", "clash", "clasp", "class", "clay", "clean", "clear", "clerk", "click", "cliff", "climb", "cling", "cloak", "clock", "close", "cloth", "cloud", "clown", "club", "coach", "coal", "coast", "coat", "code", "coin", "cold", "collar", "color", "colt", "comb", "come", "comet", "comic", "cope", "coral", "cord", "core", "cork"],
+      medium: ["abroad", "absorb", "accent", "accept", "access", "accord", "accuse", "achieve", "active", "actual", "adjust", "admire", "advice", "advise", "affair", "afford", "afraid", "agency", "agenda", "almost", "alpine", "always", "amaze", "amount", "anchor", "ancient", "animal", "annual", "answer", "anxiety", "anxious", "appeal", "appear", "arctic", "arrive", "artist", "aspect", "assert", "assess", "assist", "assume", "assure", "asthma", "athlete", "attach", "attack", "attain", "attend", "attract", "auburn", "avenue", "average", "backup", "baggage", "balloon", "bandage", "banquet", "barrier", "battery", "battle", "beacon", "beauty", "because", "become", "before", "beggar", "behave", "behind", "belief", "belong", "benefit", "besides", "betray", "beware", "beyond", "bicycle", "biology", "blanket", "blossom", "boiling", "border", "bottle", "bounce", "brainy", "branch", "breath", "breeze", "bridge", "bubble", "bucket", "budget", "buffalo", "bullet", "burden", "bureau", "burglar", "cabinet", "campus", "camera", "cancel", "cancer", "candle", "canvas", "canyon", "capable", "capital", "capsule", "captain", "capture", "caramel", "caravan", "carbon", "career", "careful", "cartoon", "catalog", "caution", "cavern", "ceiling", "century", "certain", "chamber", "channel", "chapter", "charity", "charter", "cheaply", "chimney", "cholera", "chronic", "circuit", "citizen", "clarity", "classic", "climate", "clinic", "cluster", "coastal", "cocoon", "college", "collide", "colonel", "command", "comment", "company", "compare", "compass", "compete", "complex", "comrade", "conceal", "concept", "concern", "concert", "concise", "condemn", "conduct", "confess", "confirm", "conflict", "connect"],
+      hard: ["absolute", "abundant", "academic", "accident", "accurate", "accustom", "activity", "actually", "addition", "adequate", "advocate", "ambition", "analysis", "ancestor", "announce", "apparent", "appetite", "approach", "approval", "argument", "artistic", "assembly", "athletic", "attitude", "audience", "autonomy", "backbone", "backyard", "bacteria", "baseline", "behavior", "boundary", "building", "campaign", "capacity", "carefully", "casualty", "category", "cellular", "ceremony", "chairman", "champion", "chemical", "childhood", "chocolate", "chronicle", "cigarette", "classicist", "clearance", "clinician", "coalition", "cognitive", "cohesive", "commerce", "community", "companion", "complaint", "component", "composite", "compound", "compress", "compromise", "computer", "concrete", "condition", "conductor", "conference", "confident", "confusion", "consensus", "constant", "consumer", "contract", "contrast", "convince", "corridor", "cosmetic", "creative", "credible", "critical", "cultural", "currency", "customer", "cylinder", "database", "daylight", "deadline", "decision", "decrease", "dedicate", "definite", "delicate", "delivery", "democrat", "designer", "desperate", "disaster", "discipline", "discount", "discover", "disease", "dispatch", "display", "distance", "distinct", "diversity", "district", "document", "domestic", "dominant", "donation", "dramatic", "dynamic", "economic", "edition", "election", "electric", "elegant", "element", "elevator", "emergency", "emotion", "emphasis", "empire", "employee", "employer", "encounter", "encourage", "endeavor", "energetic", "engineer", "enormous", "ensemble", "envelope", "epidemic", "equality", "equation", "equipped", "erosion", "eruption", "essential", "establish", "estimate", "eternity", "European", "evaluate", "everyday", "evidence", "exception", "exchange", "excitement", "exclusive", "excursion", "exercise", "exhaust"]
+    };
+
+    const translations = {
+      "able": "能夠", "acid": "酸的", "actor": "演員", "adult": "成人", "agent": "代理人", "ahead": "在前方", "alike": "相似的", "alive": "活著的", "alley": "小巷", "allow": "允許", "alone": "獨自的", "along": "沿著", "angle": "角度", "angry": "憤怒的", "ankle": "腳踝", "apple": "蘋果", "apron": "圍裙", "arena": "競技場", "argue": "爭論", "arise": "升起", "armed": "武裝的", "arrow": "箭", "asset": "資產", "audio": "音訊", "awake": "醒著的", "award": "獎項", "awful": "糟糕的", "bacon": "培根", "badge": "徽章", "badly": "糟糕地", "baked": "烘烤的", "baker": "麵包師", "basic": "基本的", "basin": "水盆", "basis": "基礎", "bath": "洗澡", "beach": "海灘", "beast": "野獸", "began": "開始", "begin": "開始", "being": "存在", "belly": "肚子", "below": "在下方", "bench": "長椅", "berry": "莓果", "bible": "聖經", "birth": "出生", "black": "黑色", "blade": "刀刃", "blame": "責怪", "blank": "空白的", "blast": "爆炸", "blend": "混合", "blind": "盲的", "block": "街區", "blond": "金髮的", "blood": "血液", "bloom": "開花", "board": "板子", "boast": "誇耀", "body": "身體", "bonus": "獎金", "boost": "促進", "booth": "攤位", "bored": "感到無聊的", "bound": "受束縛的", "brain": "大腦", "brake": "煞車", "brass": "黃銅", "brave": "勇敢的", "bread": "麵包", "break": "打破", "brick": "磚塊", "bride": "新娘", "brief": "簡短的", "bright": "明亮的", "bring": "帶來", "broad": "寬廣的", "broke": "破產的", "brown": "棕色", "brush": "刷子", "build": "建造", "bunch": "一束", "burnt": "燒焦的", "burst": "爆炸", "buyer": "買家", "cabin": "小木屋", "cable": "電纜", "camel": "駱駝", "camp": "露營", "canal": "運河", "candy": "糖果", "canoe": "獨木舟", "cargo": "貨物", "carry": "攜帶", "carve": "雕刻", "case": "案例", "catch": "接住", "cause": "原因", "cave": "洞穴", "cease": "停止", "chain": "鎖鏈", "chair": "椅子", "chalk": "粉筆", "chaos": "混難", "charm": "魅力", "chart": "圖表", "chase": "追逐", "cheap": "便宜的", "cheat": "欺騙", "check": "檢查", "cheek": "臉頰", "cheer": "歡呼", "chess": "西洋棋", "chest": "胸膛", "chief": "主要的", "child": "兒童", "chill": "寒冷", "chin": "下巴", "china": "瓷器", "chips": "洋芋片", "choir": "合唱團", "choke": "窒息", "chose": "選擇", "cigar": "雪茄", "civic": "市民的", "claim": "聲明", "clash": "衝突", "clasp": "緊握", "class": "班級", "clay": "黏土", "clean": "乾淨的", "clear": "清楚的", "clerk": "店員", "click": "點擊", "cliff": "懸崖", "climb": "攀爬", "cling": "緊貼", "cloak": "斗篷", "clock": "時鐘", "close": "關閉", "cloth": "布料", "cloud": "雲朵", "clown": "小丑", "club": "俱樂部", "coach": "教練", "coal": "煤炭", "coast": "海岸", "coat": "外套", "code": "密碼", "coin": "硬幣", "cold": "寒冷的", "collar": "衣領", "color": "顏色", "colt": "小馬", "comb": "梳子", "come": "來到", "comet": "彗星", "comic": "漫畫的", "cope": "應付", "coral": "珊瑚", "cord": "細繩", "core": "核心", "cork": "軟木塞"
+    };
+
+    const dom = {};
+    const domIds = ['gameScreen', 'track', 'pathLine', 'laserBubbleContainer', 'wordBox', 'typedInput', 'hpBar', 'hpText', 'combo', 'wave', 'restartBtn2', 'deathRestartBtn', 'gameOverOverlay', 'finalWave', 'pauseBtn', 'pauseIcon', 'pauseBtnText', 'pauseOverlay', 'heroSprite', 'startOverlay', 'startBtn', 'waveOverlay', 'waveBannerText'];
+    
+    const VBW = 900, VBH = 450, DETECT_T = 0.99;
+
+    const waypoints = [
+      {x: 900, y: 225}, 
+      {x: 780, y: 225},
+      {x: 780, y: 75},  
+      {x: 660, y: 75},
+      {x: 660, y: 375}, 
+      {x: 540, y: 375},
+      {x: 540, y: 75},  
+      {x: 420, y: 75},
+      {x: 420, y: 375}, 
+      {x: 300, y: 375},
+      {x: 300, y: 75},  
+      {x: 180, y: 75},
+      {x: 180, y: 225},
+      {x: 75,  y: 225}  
+    ];
+
+    let pathSegments = [], totalPathLength = 0;
+    for(let i=0; i<waypoints.length-1; i++) {
+      let dx = waypoints[i+1].x - waypoints[i].x;
+      let dy = waypoints[i+1].y - waypoints[i].y;
+      let len = Math.sqrt(dx*dx + dy*dy);
+      pathSegments.push({ start: waypoints[i], end: waypoints[i+1], length: len });
+      totalPathLength += len;
+    }
+
+    function getPointOnPathFixed(t) {
+      let targetDist = t * totalPathLength;
+      let accumulated = 0;
+      for (let seg of pathSegments) {
+        if (accumulated + seg.length >= targetDist) {
+          let segT = (targetDist - accumulated) / seg.length;
+          return {
+            x: seg.start.x + (seg.end.x - seg.start.x) * segT,
+            y: seg.start.y + (seg.end.y - seg.start.y) * segT
+          };
+        }
+        accumulated += seg.length;
+      }
+      return waypoints[waypoints.length - 1];
+    }
+
+    let state, rafId = null, scale = {sx: 1, sy: 1};
+    let bullets = []; 
+
+    function computeScale(){
+      if (!dom.track) return;
+      const rect = dom.track.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return; 
+      scale = {sx: rect.width / VBW, sy: rect.height / VBH};
+    }
+
+    const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+
+    function getWordForGame(wave) {
+      const r = Math.random();
+      if (wave >= 8) return r < 0.2 ? rand(wordPool.easy) : r < 0.6 ? rand(wordPool.medium) : rand(wordPool.hard);
+      if (wave >= 4) return r < 0.5 ? rand(wordPool.easy) : rand(wordPool.medium);
+      return rand(wordPool.easy);
+    }
+
+    const monsterGraphics = [
+      `<svg class="w-8 h-8 text-yellow-600" viewBox="0 0 24 24" fill="currentColor"><path d="M4 2h16v4H4V2zm2 6h12v4H6V8zm-4 6h20v4H2v-4zm4 6h14v2H6v-2z"/></svg>`,
+      `<svg class="w-8 h-8 text-stone-400" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12v2H6V2zm-4 4h20v4H2V6zm4 6h12v6H6v-6zm-4 8h20v2H2v-2z"/></svg>`,
+      `<svg class="w-8 h-8 text-emerald-700" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4h20v4H2V4zm4 6h12v4H6v-4zm-2 6h16v6H4v-6z"/></svg>`
+    ];
+
+    function fullReset(){
+      if (rafId) cancelAnimationFrame(rafId);
+      if (dom.track) dom.track.innerHTML = '';
+      if (dom.laserBubbleContainer) dom.laserBubbleContainer.innerHTML = '';
+      
+      bullets.forEach(b => b.el.remove());
+      bullets = [];
+
+      state = {
+        hp: 100, maxHp: 100, combo: 0, kills: 0, wave: 1,
+        monsters: [], target: null, running: true, paused: false, lastTime: performance.now(),
+        spawnTimer: 0, 
+        spawnInterval: 1200, // 初始生怪速度放慢一點點 (1.2秒一隻)        
+        monstersThisWave: 5, // 第一波維持 5 隻       
+        spawnedThisWave: 0, 
+        baseSpeed: 0.25,
+        waveIntroActive: false
+      };
+
+      dom.pauseOverlay.style.display = dom.gameOverOverlay.style.display = 'none';
+      dom.pauseBtnText.textContent = "PAUSE";
+      
+      dom.pauseIcon.setAttribute('data-lucide', 'pause');
+      if (window.lucide) window.lucide.createIcons();
+
+      dom.typedInput.disabled = false;
+      dom.typedInput.value = '';
+      
+      setTimeout(() => dom.typedInput.focus(), 10);
+      
+      computeScale();
+      updateHUD();
+      dom.wordBox.innerHTML = '<span class="text-stone-500 pixel-font text-xs">SYSTEM_INIT_SUCCESS...</span>';
+      
+      triggerWaveIntro(1);
+
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function triggerWaveIntro(waveNum) {
+      state.waveIntroActive = true;
+      dom.waveBannerText.textContent = `WAVE ${waveNum}`;
+      dom.waveOverlay.style.display = 'flex';
+      
+      dom.waveBannerText.classList.remove('wave-banner-anim');
+      void dom.waveBannerText.offsetWidth; 
+      dom.waveBannerText.classList.add('wave-banner-anim');
+
+      setTimeout(() => {
+        dom.waveOverlay.style.display = 'none';
+        state.waveIntroActive = false; 
+        if (state) state.spawnTimer = 0; 
+        dom.typedInput.focus(); 
+      }, 1500);
+    }
+
+    function updateHUD(){
+      const pct = Math.max(0, state.hp / state.maxHp * 100);
+      dom.hpBar.style.width = pct + '%';
+      dom.hpBar.className = `h-full transition-all duration-100 ${pct > 50 ? 'bg-emerald-600' : pct > 20 ? 'bg-amber-600' : 'bg-red-700 animate-pulse'}`;
+      dom.hpText.textContent = `${Math.max(0, Math.round(state.hp))}/100`;
+      dom.combo.textContent = state.combo;
+      dom.wave.textContent = state.wave;
+    }
+
+    function currentSpeed(){
+      return Math.max(0.01, state.baseSpeed + (state.wave * 0.02));
+    }
+
+    function placeMonster(m){
+      if (!m.el) return;
+      const p = getPointOnPathFixed(m.t);
+      m.el.style.left = `${(p.x / VBW) * 100}%`;
+      m.el.style.top = `${(p.y / VBH) * 100}%`;
+      m.el.style.transform = 'translate(-50%, -50%)';
+    }
+
+    function triggerShatterEffect(x, y, color = '#d97706') {
+      if (!dom.track) return;
+      for (let i = 0; i < 12; i++) {
+        const p = document.createElement('div'), size = Math.random() * 6 + 4, angle = Math.random() * Math.PI * 2, dist = Math.random() * 50 + 20;
+        p.className = 'pixel-particle';
+        p.style.cssText = `background-color: ${color}; border: 1px solid #000; left: ${x}px; top: ${y}px; width: ${size}px; height: ${size}px; --tx: ${Math.cos(angle) * dist}px; --ty: ${Math.sin(angle) * dist}px;`;
+        dom.track.appendChild(p);
+        setTimeout(() => p.remove(), 500);
+      }
+    }
+
+    function spawnMonster(){
+      if (!dom.track) return;
+      const word = getWordForGame(state.wave);
+      const el = document.createElement('div');
+      el.className = "absolute flex flex-col items-center justify-center pointer-events-none select-none z-10 w-32 h-16";
+      el.innerHTML = `
+        <div>${rand(monsterGraphics)}</div>
+        <div class="w-12 h-1.5 bg-black border border-black overflow-hidden mt-0.5">
+          <div class="h-full w-full bg-amber-500"></div>
+        </div>
+        <div class="text-[11px] font-bold mt-0.5 px-1 py-0.5 border border-black bg-stone-900 text-stone-300 font-mono tracking-wide">${word}</div>
+      `;
+      dom.track.appendChild(el);
+
+      const m = { word, t: 0, el, label: el.lastElementChild, dying: false };
+      placeMonster(m);
+      state.monsters.push(m);
+      pickNextTarget();
+    }
+
+    function pickNextTarget(){
+      const activeMonsters = state.monsters.filter(m => !m.dying);
+      
+      if (activeMonsters.length === 0){ 
+        state.target = null; 
+        dom.wordBox.innerHTML = '<span class="text-stone-500 pixel-font text-xs">AWAITING_HOSTILES...</span>'; 
+        return; 
+      }
+      
+      activeMonsters.sort((a, b) => b.t - a.t);
+      const nearestTarget = activeMonsters[0];
+      
+      if (state.target !== nearestTarget) {
+        if (state.target && state.target.el) {
+          state.target.label.className = "text-[11px] font-bold mt-0.5 px-1 py-0.5 border border-black bg-stone-900 text-stone-300 font-mono tracking-wide";
+        }
+        state.target = nearestTarget;
+        state.target.label.className = "text-[12px] font-black mt-0.5 px-1 py-0.5 border-2 border-amber-600 bg-amber-950 text-amber-400 font-mono tracking-wide shadow-md animate-pulse";
+      }
+      renderSpectrumHighlight();
+    }
+
+    function renderSpectrumHighlight() {
+      if (!state.target || !dom.track) return;
+      
+      const baseWord = state.target.word, typed = dom.typedInput.value;
+
+      let htmlOutput = Array.from(baseWord).map((char, i) => {
+        if (i < typed.length) {
+          return char === typed[i] ? `<span class="text-emerald-500 font-black border-b-2 border-emerald-500">${char}</span>` : `<span class="text-red-500 font-black bg-red-950/80 px-0.5 border border-red-600">${char}</span>`;
+        }
+        return `<span class="text-stone-400">${char}</span>`;
+      }).join('');
+
+      if (translations[baseWord]) htmlOutput += `<span class="text-sm text-stone-500 font-bold ml-4 font-sans">/* ${translations[baseWord]} */</span>`;
+      dom.wordBox.innerHTML = htmlOutput;
+    }
+
+    function fireBulletAt(targetMonster) {
+      if (!dom.track || !targetMonster) return;
+      
+      targetMonster.dying = true;
+
+      const heroRect = dom.heroSprite.getBoundingClientRect();
+      const parentRect = dom.track.getBoundingClientRect();
+      
+      const startX = heroRect.left - parentRect.left + (heroRect.width / 2);
+      const startY = heroRect.top - parentRect.top + (heroRect.height / 2);
+
+      const bulletEl = document.createElement('div');
+      bulletEl.className = 'bullet';
+      bulletEl.style.left = `${startX}px`;
+      bulletEl.style.top = `${startY}px`;
+      dom.track.appendChild(bulletEl);
+
+      bullets.push({
+        el: bulletEl,
+        x: startX,
+        y: startY,
+        target: targetMonster,
+        speed: 1.8 
+      });
+
+      pickNextTarget();
+    }
+
+    function removeMonster(m){
+      if (m.el) m.el.remove();
+      state.monsters = state.monsters.filter(x => x !== m);
+      if (state.target === m) state.target = null;
+      pickNextTarget();
+      
+      if (state.spawnedThisWave >= state.monstersThisWave && state.monsters.length === 0){
+        state.wave++; 
+        
+        // 【修改核心】：改用平滑成長公式。每一波只多增加 1~2 隻左右
+        state.monstersThisWave = 4 + Math.floor(state.wave * 1.2); 
+        
+        state.spawnedThisWave = 0;
+        
+        // 【修改核心】：出怪速度放慢削減幅道，每次只快 40ms，極限速度限制在 450ms
+        state.spawnInterval = Math.max(450, state.spawnInterval - 40);
+        
+        triggerWaveIntro(state.wave);
+      }
+    }
+
+    function loop(now){
+      if (!state || !state.running) return;
+      if (state.paused){ state.lastTime = now; rafId = requestAnimationFrame(loop); return; }
+      
+      let dt = Math.min(200, now - state.lastTime);
+      state.lastTime = now;
+
+      if (state.waveIntroActive) {
+        rafId = requestAnimationFrame(loop);
+        return;
+      }
+
+      if ((state.spawnTimer += dt) > state.spawnInterval && state.spawnedThisWave < state.monstersThisWave){
+        state.spawnTimer = 0; state.spawnedThisWave++; spawnMonster();
+      }
+
+      const speed = currentSpeed();
+      
+      for (const m of [...state.monsters]){
+        if (!m.dying) {
+          m.t += speed * dt * 0.0001;
+        }
+        
+        if (m.t >= DETECT_T){
+          state.hp -= 15; state.combo = 0; dom.typedInput.value = '';
+          dom.gameScreen.classList.add('damage-flash');
+          setTimeout(() => dom.gameScreen.classList.remove('damage-flash'), 300);
+          removeMonster(m);
+          
+          if (state.hp <= 0){
+            updateHUD(); state.running = false; cancelAnimationFrame(rafId);
+            dom.typedInput.disabled = true;
+            dom.finalWave.textContent = state.wave; dom.gameOverOverlay.style.display = 'flex';
+            return;
+          }
+        } else placeMonster(m);
+      }
+
+      const parentRect = dom.track.getBoundingClientRect();
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        
+        if (!state.monsters.includes(b.target)) {
+          b.el.remove();
+          bullets.splice(i, 1);
+          continue;
+        }
+
+        const mRect = b.target.el.getBoundingClientRect();
+        const targetX = mRect.left - parentRect.left + (mRect.width / 2);
+        const targetY = mRect.top - parentRect.top + (mRect.height / 2);
+
+        const dx = targetX - b.x;
+        const dy = targetY - b.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const moveDist = b.speed * dt;
+
+        if (dist <= moveDist + 15) {
+          triggerShatterEffect(targetX, targetY);
+          removeMonster(b.target);
+          b.el.remove();
+          bullets.splice(i, 1);
+        } else {
+          b.x += (dx / dist) * moveDist;
+          b.y += (dy / dist) * moveDist;
+          b.el.style.left = `${b.x}px`;
+          b.el.style.top = `${b.y}px`;
+        }
+      }
+
+      state.monsters.filter(m => !m.dying).length > 0 ? pickNextTarget() : null;
+      updateHUD();
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function init() {
+      domIds.forEach(id => dom[id] = document.getElementById(id));
+      
+      if (dom.pathLine) {
+        dom.pathLine.setAttribute('d', `M ${waypoints.map(p => p.x + ' ' + p.y).join(' L ')}`);
+      }
+      
+      window.addEventListener('resize', () => {
+        computeScale();
+        state?.monsters.forEach(placeMonster);
+      });
+
+      dom.typedInput.addEventListener('input', () => {
+        if (!state?.running || state.paused || !state.target || state.waveIntroActive) return;
+        if (dom.typedInput.value === state.target.word) {
+          state.combo++;
+          fireBulletAt(state.target);
+          dom.typedInput.value = ''; updateHUD();
+        }
+        renderSpectrumHighlight();
+      });
+
+      dom.typedInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          if (!state || state.paused || !state.running || state.waveIntroActive) return;
+          const val = dom.typedInput.value.trim();
+          dom.typedInput.value = '';
+          if (val !== "" && (!state.target || val !== state.target.word)) {
+            state.combo = 0; dom.typedInput.classList.add('damage-flash');
+            setTimeout(() => dom.typedInput.classList.remove('damage-flash'), 300);
+            updateHUD(); renderSpectrumHighlight();
+          }
+        }
+      });
+
+      dom.pauseBtn.addEventListener('click', () => {
+        if (!state?.running || state.waveIntroActive) return;
+        state.paused = !state.paused;
+        dom.pauseOverlay.style.display = state.paused ? 'flex' : 'none';
+        dom.pauseBtnText.textContent = state.paused ? "RESUME" : "PAUSE";
+        dom.pauseIcon.className = state.paused ? "w-4 h-4 text-emerald-400" : "w-4 h-4"; 
+        dom.pauseIcon.setAttribute('data-lucide', state.paused ? 'play' : 'pause');
+        if (!state.paused) dom.typedInput.focus();
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      dom.restartBtn2.addEventListener('click', fullReset);
+      dom.deathRestartBtn.addEventListener('click', fullReset);
+      
+      if (dom.startBtn) {
+        dom.startBtn.addEventListener('click', function() {
+          dom.startOverlay.style.display = 'none';
+          fullReset();
+          dom.typedInput.focus(); 
+        });
+      }
+    }
+
+    window.onload = function() {
+      init();
+    };
+  })();
+  </script>
+</body>
+</html>
