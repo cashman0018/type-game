@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
+    /* 基本字體與背景設定 */
     body { 
       font-family: 'Noto Sans TC', monospace; 
       background-color: #111116; 
@@ -16,6 +17,7 @@
     }
     .pixel-font { font-family: 'Press Start 2P', monospace; }
     
+    /* 復古街機風格按鈕與邊框 */
     .retro-border {
       border: 4px solid #000000;
       box-shadow: 4px 4px 0px #222225;
@@ -30,7 +32,12 @@
       box-shadow: 1px 1px 0px #000000;
     }
 
-    @keyframes damageShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+    /* 基地受傷時的紅色閃爍與震動動畫 */
+    @keyframes damageShake { 
+      0%, 100% { transform: translateX(0); } 
+      20%, 60% { transform: translateX(-6px); } 
+      40%, 80% { transform: translateX(6px); } 
+    }
     .damage-flash { animation: damageShake 0.3s ease-in-out; border-color: #ef4444 !important; }
     
     /* ======== 單字輸入錯誤的專屬純左右震動動畫 ======== */
@@ -44,14 +51,15 @@
     .error-shake {
       animation: errorShake 0.3s ease-in-out;
     }
-    /* ========================================================== */
 
+    /* 遊戲戰場的網格背景 */
     .graveyard-bg {
       background-color: #1a1a24;
       background-image: linear-gradient(to right, #242432 1px, transparent 1px), linear-gradient(to bottom, #242432 1px, transparent 1px);
       background-size: 20px 20px;
     }
     
+    /* 怪物死亡時的粒子爆破動畫 */
     .pixel-particle { 
       position: absolute; 
       pointer-events: none; 
@@ -62,6 +70,7 @@
       100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } 
     }
 
+    /* 雷射子彈樣式 */
     .bullet {
       position: absolute;
       width: 12px;
@@ -74,6 +83,7 @@
       transform: translate(-50%, -50%);
     }
 
+    /* 波次切換時的文字放大淡出動畫 */
     @keyframes wavePop {
       0% { transform: scale(0.5); opacity: 0; }
       15% { transform: scale(1.1); opacity: 1; }
@@ -84,17 +94,26 @@
     .wave-banner-anim {
       animation: wavePop 1.5s ease-in-out forwards;
     }
+    
+    /* 鎖定輸入框時的視覺提示（變暗） */
+    input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-2 md:p-4 select-none">
 
+  <!-- 遊戲主容器 -->
   <div class="w-full max-w-7xl bg-[#1e1e2a] border-[6px] border-black rounded-none overflow-hidden shadow-[8px_8px_0px_rgba(0,0,0,0.5)] relative">
     <div class="h-3 w-full bg-[#cc5500]"></div>
 
     <div id="gameScreen" class="p-3 md:p-6 flex flex-col gap-4 transition-all duration-300 relative">
       <div class="flex flex-col lg:flex-row gap-4">
         
+        <!-- 左側資訊面板 (包含血條、波次、擊殺數、剩餘怪物進度) -->
         <div class="w-full lg:w-64 bg-[#282836] border-4 border-black p-4 flex flex-col gap-4">
+          <!-- 玩家資訊與血條 -->
           <div class="flex items-center gap-3 bg-[#161622] p-3 border-2 border-black">
             <div class="w-12 h-12 bg-[#3a3a4a] border-2 border-black flex items-center justify-center rounded-none overflow-hidden shrink-0">
               <svg class="w-10 h-10" viewBox="0 0 40 40">
@@ -112,40 +131,49 @@
             </div>
           </div>
 
+          <!-- 遊戲即時數據區塊 -->
           <div class="flex flex-col gap-3 bg-[#161622] p-3 border-2 border-black shadow-md">
+            <!-- 波次 -->
             <div class="flex items-center justify-between border-b border-gray-800 pb-2">
               <span class="text-red-500 font-bold text-xs pixel-font">WAVE</span>
               <span id="wave" class="pixel-font text-base font-black text-red-500">1</span>
             </div>
-            
+            <!-- 擊殺數 -->
             <div class="flex items-center justify-between border-b border-gray-800 pb-2 pt-0.5">
               <span class="text-amber-500 font-bold text-xs pixel-font">KILLS</span>
               <span id="liveKills" class="pixel-font text-sm font-black text-amber-500">0</span>
             </div>
-
+            <!-- 本波剩餘怪物進度條 (遞減顯示) -->
             <div class="mt-1">
               <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 pixel-font mb-1">
-                <span>PROGRESS</span>
-                <span id="progressText">0/5</span>
+                <span>REMAINING</span>
+                <span id="progressText">5/5</span>
               </div>
+              <!-- 進度條外框 -->
               <div class="w-full h-2.5 bg-black border border-stone-700 overflow-hidden">
-                <div id="progressBar" class="h-full bg-amber-600 transition-all duration-200" style="width: 0%;"></div>
+                <!-- 進度條本體：一開始100%，慢慢減少 -->
+                <div id="progressBar" class="h-full bg-amber-600 transition-all duration-200" style="width: 100%;"></div>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- 右側遊戲戰場與輸入區 -->
         <div class="flex-1 flex flex-col gap-3">
+          <!-- 目標單字顯示區 -->
           <div class="relative bg-[#161622] border-4 border-black py-3 px-5 flex items-center justify-between min-h-[76px] shadow-inner">
             <div class="absolute top-1 left-4 text-[9px] text-gray-500 font-black tracking-widest pixel-font">TARGET_LOCK_ON</div>
             <div id="wordBox" class="text-xl md:text-2xl font-black tracking-[3px] select-none transition-all mt-2 flex-1 leading-relaxed text-gray-200">READY...</div>
           </div>
 
+          <!-- 遊戲戰鬥畫面 -->
           <div class="relative h-[450px] border-4 border-black overflow-hidden graveyard-bg">
+            <!-- 怪物移動軌跡線 -->
             <svg id="laserSvg" width="100%" height="100%" viewBox="0 0 900 450" preserveAspectRatio="none" class="absolute inset-0 pointer-events-none z-15">
               <path id="pathLine" d="" fill="none" stroke="#333344" stroke-width="6" stroke-linejoin="miter"/>
             </svg>
 
+            <!-- 玩家主堡 (終點) -->
             <div class="absolute left-[51px] top-[225px] transform -translate-y-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
               <div id="heroSprite" class="w-12 h-12 bg-transparent flex items-center justify-center relative">
                 <svg class="w-12 h-12" viewBox="0 0 40 40">
@@ -155,19 +183,23 @@
               <div class="px-1.5 py-0.5 bg-black text-[8px] text-amber-500 pixel-font mt-1 border border-amber-500">BASE</div>
             </div>
 
+            <!-- 怪物與特效的容器 -->
             <div id="track" class="absolute inset-0 z-10 pointer-events-none"></div>
             <div id="laserBubbleContainer" class="absolute inset-0 z-20 pointer-events-none"></div>
 
+            <!-- 暫停遮罩 -->
             <div id="pauseOverlay" class="absolute inset-0 bg-black/80 hidden flex-col items-center justify-center gap-2 z-30">
               <div class="pixel-font text-lg font-black tracking-widest text-white uppercase">PAUSED</div>
               <p class="text-[11px] text-gray-400 pixel-font">PRESS RESUME TO CONTINUE</p>
             </div>
 
+            <!-- 波次提示文字遮罩 -->
             <div id="waveOverlay" class="absolute inset-0 bg-black/40 hidden flex-col items-center justify-center z-25 pointer-events-none">
               <div id="waveBannerText" class="pixel-font text-3xl md:text-4xl font-black text-amber-500 tracking-widest drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]">WAVE 1</div>
             </div>
           </div>
 
+          <!-- 底部鍵盤輸入框與按鈕 -->
           <div class="flex flex-col sm:flex-row gap-3">
             <div class="relative flex-1">
               <input id="typedInput" type="text" placeholder="輸入單字消滅迎面而來的怪物..." 
@@ -187,14 +219,16 @@
         </div>
       </div>
 
+      <!-- 遊戲初始開始畫面 -->
       <div id="startOverlay" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center gap-6 z-50">
         <div class="text-center">
           <h1 class="pixel-font text-amber-500 text-3xl md:text-4xl font-black tracking-wider mb-2 animate-bounce">怪物防衛戰</h1>
-          <p class="text-xs text-gray-400 tracking-widest mt-2 pixel-font">READY YOUR KEYBOARD, DEFENDER</p>
+          <p class="text-xs text-gray-400 tracking-widest mt-2 pixel-font">TOEIC DEFENDER - TYPE TO SURVIVE</p>
         </div>
         <button id="startBtn" class="pixel-font retro-btn px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base tracking-widest">START GAME</button>
       </div>
 
+      <!-- GAME OVER 結算畫面 -->
       <div id="gameOverOverlay" class="absolute inset-0 bg-black/95 hidden flex-col items-center justify-center gap-6 z-50">
         <div class="text-center">
           <h1 class="pixel-font text-red-600 text-4xl font-black tracking-wider mb-2">GAME OVER</h1>
@@ -210,7 +244,8 @@
   </div>
 
   <script>
-  (function(){
+ 
+ (function(){
     // ==========================================
     // 單字庫
     // ==========================================
@@ -218,17 +253,57 @@
       easy: [
         "desk", "game", "hero", "king", "lion", "moon", "night", "ocean", 
         "park", "rose", "star", "tree", "wind", "zone", "milk", "fish", 
-        "bird", "door", "jump", "swim", "fire", "water", "earth", "cloud", "rain"
+        "bird", "door", "jump", "swim", "fire", "water", "earth", "cloud", "rain",
+        "meeting", "office", "boss", "team", "report", "email", "client", "cost", 
+        "plan", "date", "time", "work", "task", "staff", "rule", "goal", 
+        "skill", "tool", "sale", "idea", "mail", "copy", "form", "sign", 
+        "bill", "cash", "bank", "card", "tax", "fee", "pay", "buy", "sell", "deal",
+        "call", "post", "book", "note", "file", "list", "page", "room", 
+        "door", "desk", "chair", "lamp", "wall", "floor", "name", "firm", 
+        "data", "site", "web", "link", "chat", "text", "shop", "cart", 
+        "item", "price", "pack", "ship", "tour", "trip", "food", "menu", 
+        "chef", "dish", "meal", "drink", "cup", "glass", "water", "juice", 
+        "milk", "coffee", "tea", "cake", "bread", "meat", "fish", "fruit", 
+        "apple", "car", "bus", "train", "seat", "road", "park", "map", 
+        "bag", "case", "coat", "suit", "shoe", "size", "fit", "color", 
+        "show", "play", "band", "song", "movie", "film","mango"
       ],
       medium: [
         "bridge", "camera", "doctor", "forest", "guitar", "jacket", "market", "monkey", 
         "planet", "shadow", "silver", "spring", "summer", "winter", "purple", "yellow", 
-        "orange", "pencil", "window", "rocket", "castle", "dragon", "nigger", "palace", "knight"
+        "orange", "pencil", "window", "rocket", "castle", "dragon", "nigger", "palace", "knight",
+        "budget", "profit", "policy", "market", "review", "update", "cancel", "delay", 
+        "attend", "inform", "advice", "salary", "career", "resume", "hire", "train", 
+        "supply", "demand", "factory", "branch", "survey", "result", "option", "choice", 
+        "refund", "charge", "ticket", "flight", "travel", "luggage", "safety", "system", "access", "account",
+        "accept", "arrive", "attach", "boring", "borrow", "broken", "button", "camera", 
+        "careful", "center", "change", "choose", "circle", "clean", "clerk", "clever", 
+        "client", "closed", "clothes", "cloudy", "coffee", "collect", "common", "corner", 
+        "correct", "couple", "course", "cousin", "create", "crowd", "custom", "danger", 
+        "decide", "degree", "depend", "design", "detail", "device", "dinner", "direct", 
+        "divide", "doctor", "double", "driver", "effort", "engine", "enough", "entire", 
+        "escape", "expert", "factor", "famous", "father", "figure", "finger", "finish", 
+        "flight", "flower", "follow", "forget", "formal", "friend", "future", "garden", 
+        "gather", "gentle", "global", "ground", "growth", "handle","nigger"
       ],
       hard: [
-        "beautiful", "champion", "dangerous", "elephant", "festival", "hospital", "mountain", "computer", 
+        "dangerous", "elephant", "festival", "hospital", "mountain", "computer", 
         "dictionary", "tomorrow", "universe", "vacation", "waterfall", "keyboard", "dinosaur", "astronaut", 
-        "chocolate", "lightning", "umbrella", "butterfly", "adventure", "treasure", "fountain", "guardian", "nightmare"
+        "chocolate", "lightning", "umbrella", "butterfly", "adventure", "treasure", "fountain", "guardian", "nightmare",
+        "strategy", "negotiate", "proposal", "schedule", "interview", "employee", "employer", "manager", 
+        "director", "contract", "agreement", "signature", "deadline", "warranty", "guarantee", "conference", 
+        "seminar", "exhibition", "convention", "equipment", "facility", "maintenance", "procedure", "regulation", 
+        "compliance", "investment", "revenue", "expand", "evaluate", "implement",
+        "accommodate", "accomplish", "accumulate", "acknowledge", "acquisition", "alternative", 
+        "anticipate", "appropriate", "approximate", "collaborate", "communicate", "compensation", 
+        "competitive", "comprehensive", "consecutive", "consequence", "considerable", "consolidate", 
+        "contribute", "convenient", "corporation", "demonstrate", "department", "destination", 
+        "development", "discrepancy", "distribute", "environment", "established", "exceptional", 
+        "executive", "experienced", "fundamental", "headquarters", "illustrate", "incorporate", 
+        "independent", "initiative", "instruction", "instrument", "interfere", "investigate", 
+        "legislation", "manufacture", "negotiation", "observation", "opportunity", "participate", 
+        "performance", "perspective", "preparation", "presentation", "professional", "qualification", 
+        "recognition", "recommend", "replacement", "representative", "significant", "specification"
       ]
     };
 
@@ -242,6 +317,28 @@
       "star": "星星", "tree": "樹木", "wind": "風", "zone": "區域", "milk": "牛奶", 
       "fish": "魚", "bird": "鳥", "door": "門", "jump": "跳躍", "swim": "游泳", 
       "fire": "火", "water": "水", "earth": "地球", "cloud": "雲朵", "rain": "下雨",
+      "meeting": "會議", "office": "辦公室", "boss": "老闆", "team": "團隊", "report": "報告", 
+      "email": "電子郵件", "client": "客戶", "cost": "成本", "plan": "計畫", "date": "日期", 
+      "time": "時間", "work": "工作", "task": "任務", "staff": "職員", "rule": "規則", 
+      "goal": "目標", "skill": "技能", "tool": "工具", "sale": "銷售", "idea": "想法", 
+      "mail": "郵件", "copy": "複製/副本", "form": "表單", "sign": "簽署", "bill": "帳單", 
+      "cash": "現金", "bank": "銀行", "card": "卡片", "tax": "稅金", "fee": "費用", 
+      "pay": "支付", "buy": "購買", "sell": "販賣", "deal": "交易",
+      "call": "打電話/呼叫", "post": "郵寄/發布", "book": "書本/預訂", "note": "筆記", "file": "檔案", 
+      "list": "清單", "page": "頁面", "room": "房間", "door": "門", "desk": "書桌", 
+      "chair": "椅子", "lamp": "檯燈", "wall": "牆壁", "floor": "地板", "name": "名字", 
+      "firm": "公司", "data": "數據", "site": "地點/網站", "web": "網路", "link": "連結", 
+      "chat": "聊天", "text": "文字", "shop": "商店", "cart": "購物車", "item": "項目", 
+      "price": "價格", "pack": "打包", "ship": "運送", "tour": "旅遊", "trip": "旅行", 
+      "food": "食物", "menu": "菜單", "chef": "主廚", "dish": "菜餚", "meal": "餐點", 
+      "drink": "飲料", "cup": "杯子", "glass": "玻璃杯", "water": "水", "juice": "果汁", 
+      "milk": "牛奶", "coffee": "咖啡", "tea": "茶", "cake": "蛋糕", "bread": "麵包", 
+      "meat": "肉", "fish": "魚", "fruit": "水果", "apple": "蘋果", "car": "汽車", 
+      "bus": "公車", "train": "火車", "seat": "座位", "road": "道路", "park": "公園", 
+      "map": "地圖", "bag": "袋子", "case": "案件/箱子", "coat": "外套", "suit": "西裝", 
+      "shoe": "鞋子", "size": "尺寸", "fit": "適合", "color": "顏色", "show": "展示/表演", 
+      "play": "玩耍/戲劇", "band": "樂團", "song": "歌曲", "movie": "電影", "film": "影片","mango":"芒果",
+    
 
       // Medium
       "bridge": "橋樑", "camera": "相機", "doctor": "醫生", "forest": "森林", "guitar": "吉他", 
@@ -249,21 +346,65 @@
       "silver": "銀色", "spring": "春天", "summer": "夏天", "winter": "冬天", "purple": "紫色", 
       "yellow": "黃色", "orange": "柳橙", "pencil": "鉛筆", "window": "窗戶", "rocket": "火箭", 
       "castle": "城堡", "dragon": "飛龍", "nigger": "尼哥", "palace": "宮殿", "knight": "騎士",
+      "budget": "預算", "profit": "利潤", "policy": "政策", "market": "市場", "review": "審查/評論", 
+      "update": "更新", "cancel": "取消", "delay": "延遲", "attend": "出席", "inform": "通知", 
+      "advice": "建議", "salary": "薪水", "career": "職業生涯", "resume": "履歷", "hire": "雇用", 
+      "train": "訓練", "supply": "供應", "demand": "需求", "factory": "工廠", "branch": "分公司", 
+      "survey": "調查", "result": "結果", "option": "選項", "choice": "選擇", "refund": "退款", 
+      "charge": "收費/負責", "ticket": "票券", "flight": "航班", "travel": "旅行", "luggage": "行李", 
+      "safety": "安全", "system": "系統", "access": "存取/進入", "account": "帳戶",
+      "accept": "接受", "arrive": "到達", "attach": "附上", "boring": "無聊的", "borrow": "借入", 
+      "broken": "損壞的", "button": "按鈕", "camera": "相機", "careful": "小心的", "center": "中心", 
+      "change": "改變", "choose": "選擇", "circle": "圓圈", "clean": "乾淨的", "clerk": "職員", 
+      "clever": "聰明的", "client": "客戶", "closed": "關閉的", "clothes": "衣服", "cloudy": "多雲的", 
+      "coffee": "咖啡", "collect": "收集", "common": "共同的", "corner": "角落", "correct": "正確的", 
+      "couple": "一對", "course": "課程", "cousin": "堂表兄弟姊妹", "create": "創造", "crowd": "人群", 
+      "custom": "習俗", "danger": "危險", "decide": "決定", "degree": "程度", "depend": "依賴", 
+      "design": "設計", "detail": "細節", "device": "設備", "dinner": "晚餐", "direct": "直接的", 
+      "divide": "劃分", "doctor": "醫生", "double": "雙倍的", "driver": "司機", "effort": "努力", 
+      "engine": "引擎", "enough": "足夠的", "entire": "整個的", "escape": "逃脫", "expert": "專家", 
+      "factor": "因素", "famous": "著名的", "father": "父親", "figure": "數字/人物", "finger": "手指", 
+      "finish": "完成", "flight": "航班", "flower": "花朵", "follow": "跟隨", "forget": "忘記", 
+      "formal": "正式的", "friend": "朋友", "future": "未來", "garden": "花園", "gather": "聚集", 
+      "gentle": "溫柔的", "global": "全球的", "ground": "地面", "growth": "成長", "handle": "處理","nigger":"黑鬼",
 
       // Hard
-      "beautiful": "美麗的", "champion": "冠軍", "dangerous": "危險的", "elephant": "大象", "festival": "節日", 
+      "dangerous": "危險的", "elephant": "大象", "festival": "節日", 
       "hospital": "醫院", "mountain": "山脈", "computer": "電腦", "dictionary": "字典", "tomorrow": "明天", 
       "universe": "宇宙", "vacation": "假期", "waterfall": "瀑布", "keyboard": "鍵盤", "dinosaur": "恐龍", 
       "astronaut": "宇航員", "chocolate": "巧克力", "lightning": "閃電", "umbrella": "雨傘", "butterfly": "蝴蝶", 
-      "adventure": "冒險", "treasure": "寶藏", "fountain": "噴泉", "guardian": "守護者", "nightmare": "噩夢"
+      "adventure": "冒險", "treasure": "寶藏", "fountain": "噴泉", "guardian": "守護者", "nightmare": "噩夢",
+      "strategy": "策略", "negotiate": "談判", "proposal": "提案", "schedule": "行程表", "interview": "面試", 
+      "employee": "員工", "employer": "雇主", "manager": "經理", "director": "總監", "contract": "合約", 
+      "agreement": "協議", "signature": "簽名", "deadline": "截止日期", "warranty": "保固", "guarantee": "保證", 
+      "conference": "大型會議", "seminar": "研討會", "exhibition": "展覽", "convention": "大會", "equipment": "設備", 
+      "facility": "設施", "maintenance": "維護", "procedure": "程序", "regulation": "規定", "compliance": "合規性", 
+      "investment": "投資", "revenue": "營收", "expand": "擴張", "evaluate": "評估", "implement": "實施",
+      "accommodate": "容納/提供住宿", "accomplish": "完成", "accumulate": "累積", "acknowledge": "承認", 
+      "acquisition": "收購/獲得", "alternative": "替代方案", "anticipate": "預期", "appropriate": "適當的", 
+      "approximate": "大約的", "collaborate": "合作", "communicate": "溝通", "compensation": "補償", 
+      "competitive": "有競爭力的", "comprehensive": "全面的", "consecutive": "連續的", "consequence": "後果", 
+      "considerable": "相當大的", "consolidate": "鞏固/合併", "contribute": "貢獻", "convenient": "方便的", 
+      "corporation": "公司", "demonstrate": "示範", "department": "部門", "destination": "目的地", 
+      "development": "發展", "discrepancy": "差異", "distribute": "分發", "environment": "環境", 
+      "established": "已建立的", "exceptional": "例外的/傑出的", "executive": "高階主管", "experienced": "有經驗的", 
+      "fundamental": "基本的", "headquarters": "總部", "illustrate": "說明", "incorporate": "合併", 
+      "independent": "獨立的", "initiative": "倡議/主動性", "instruction": "指示", "instrument": "儀器", 
+      "interfere": "干涉", "investigate": "調查", "legislation": "立法", "manufacture": "製造", 
+      "negotiation": "談判", "observation": "觀察", "opportunity": "機會", "participate": "參與", 
+      "performance": "表現", "perspective": "觀點", "preparation": "準備", "presentation": "簡報", 
+      "professional": "專業的", "qualification": "資格", "recognition": "認可", "recommend": "推薦", 
+      "replacement": "替換", "representative": "代表", "significant": "重要的", "specification": "規格"
     };
 
+
     const dom = {};
-    // 將新加的直立資訊欄 ID 補進綁定清單
     const domIds = ['gameScreen', 'track', 'pathLine', 'laserBubbleContainer', 'wordBox', 'typedInput', 'hpBar', 'hpText', 'wave', 'restartBtn2', 'deathRestartBtn', 'gameOverOverlay', 'finalWave', 'finalKills', 'pauseBtn', 'pauseIcon', 'pauseBtnText', 'pauseOverlay', 'heroSprite', 'startOverlay', 'startBtn', 'waveOverlay', 'waveBannerText', 'liveKills', 'progressText', 'progressBar'];
     
+    // 虛擬畫布尺寸 (維持比例計算用)
     const VBW = 900, VBH = 450, DETECT_T = 0.99;
 
+    // 怪物行走的折返路徑座標點
     const waypoints = [
       {x: 900, y: 225}, {x: 780, y: 225}, {x: 780, y: 75},  
       {x: 660, y: 75},  {x: 660, y: 375}, {x: 540, y: 375},
@@ -281,6 +422,7 @@
       totalPathLength += len;
     }
 
+    // 計算特定進度 (t = 0~1) 所在的具體 X/Y 座標
     function getPointOnPathFixed(t) {
       let targetDist = t * totalPathLength;
       let accumulated = 0;
@@ -309,21 +451,27 @@
 
     const rand = arr => arr[Math.floor(Math.random() * arr.length)];
 
-    // 順序優化過的隨機抽字機制
+    // 根據目前的 Wave 波次決定單字難度抽卡機率
     function getWordForGame(wave) {
       const r = Math.random();
+      // Wave 10 以上：大量高難度字
       if (wave >= 10) return rand(wordPool.hard);
-      if (wave >= 7) return r < 0.2 ? rand(wordPool.easy) : r < 0.5 ? rand(wordPool.medium) : rand(wordPool.hard);
+      // Wave 7~9：混合中高難度字
+      if (wave >= 7) return r < 0.2 ? rand(wordPool.easy) : r < 0.6 ? rand(wordPool.medium) : rand(wordPool.hard);
+      // Wave 3~6：混合初中級單字
       if (wave >= 3) return r < 0.4 ? rand(wordPool.easy) : rand(wordPool.medium);
+      // Wave 1~2：全初級單字給玩家熱身
       return rand(wordPool.easy);
     }
 
+    // 怪物的 SVG 圖像庫
     const monsterGraphics = [
       `<svg class="w-8 h-8 text-yellow-600" viewBox="0 0 24 24" fill="currentColor"><path d="M4 2h16v4H4V2zm2 6h12v4H6V8zm-4 6h20v4H2v-4zm4 6h14v2H6v-2z"/></svg>`,
       `<svg class="w-8 h-8 text-stone-400" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12v2H6V2zm-4 4h20v4H2V6zm4 6h12v6H6v-6zm-4 8h20v2H2v-2z"/></svg>`,
       `<svg class="w-8 h-8 text-emerald-700" viewBox="0 0 24 24" fill="currentColor"><path d="M2 4h20v4H2V4zm4 6h12v4H6v-4zm-2 6h16v6H4v-6z"/></svg>`
     ];
 
+    // 初始化與重置遊戲狀態
     function fullReset(){
       if (rafId) cancelAnimationFrame(rafId);
       if (dom.track) dom.track.innerHTML = '';
@@ -332,15 +480,24 @@
       bullets.forEach(b => b.el.remove());
       bullets = [];
 
+      // 初始化狀態機
       state = {
-        hp: 100, maxHp: 100, kills: 0, wave: 1,
+        hp: 100, 
+        maxHp: 100, 
+        kills: 0, 
+        wave: 1,
         errorIndex: -1,
-        monsters: [], target: null, running: true, paused: false, lastTime: performance.now(),
+        monsters: [], 
+        target: null, 
+        running: true, 
+        paused: false, 
+        lastTime: performance.now(),
         spawnTimer: 0, 
-        spawnInterval: 1200,      
-        monstersThisWave: 5,     
-        spawnedThisWave: 0, 
-        baseSpeed: 0.25,
+        spawnInterval: 1500, // 初始生成速度：每 1.5 秒一隻
+        monstersThisWave: 5, // Wave 1 總共要清空 5 隻怪
+        spawnedThisWave: 0,  // 已「生成」的怪物數量
+        processedThisWave: 0, // 本波已經「死亡/消失」的怪物數量 (用來計算進度條倒扣)
+        baseSpeed: 0.33,     // 怪物基礎移動速度
         waveIntroActive: false
       };
 
@@ -361,14 +518,22 @@
       
       triggerWaveIntro(1);
 
+      // 啟動遊戲主迴圈
       rafId = requestAnimationFrame(loop);
     }
 
+    // ==========================================
+    // 觸發 Wave 波次轉換提示動畫 (含防呆清空機制)
+    // ==========================================
     function triggerWaveIntro(waveNum) {
       state.waveIntroActive = true;
       dom.waveBannerText.textContent = `WAVE ${waveNum}`;
       dom.waveOverlay.style.display = 'flex';
       
+      // 【防呆優化】換波次時，強制清空並鎖死輸入框，防止玩家在過場時亂打字
+      dom.typedInput.value = ''; 
+      dom.typedInput.disabled = true;
+
       dom.waveBannerText.classList.remove('wave-banner-anim');
       void dom.waveBannerText.offsetWidth; 
       dom.waveBannerText.classList.add('wave-banner-anim');
@@ -377,25 +542,35 @@
         dom.waveOverlay.style.display = 'none';
         state.waveIntroActive = false; 
         if (state) state.spawnTimer = 0; 
+        
+        // 【防呆優化】過場結束後，解開輸入框鎖定並自動對焦，讓玩家可以馬上迎擊
+        dom.typedInput.disabled = false;
         dom.typedInput.focus(); 
       }, 1500);
     }
 
-    // 更新 HUD：同時更新左側新增的直立資訊
+    // ==========================================
+    // 更新左側儀表板 UI (血量、進度條、擊殺數)
+    // ==========================================
     function updateHUD(){
+      // 1. 更新玩家血條顏色與長度
       const pct = Math.max(0, state.hp / state.maxHp * 100);
       dom.hpBar.style.width = pct + '%';
       dom.hpBar.className = `h-full transition-all duration-100 ${pct > 50 ? 'bg-emerald-600' : pct > 20 ? 'bg-amber-600' : 'bg-red-700 animate-pulse'}`;
       dom.hpText.textContent = `${Math.max(0, Math.round(state.hp))}/100`;
       dom.wave.textContent = state.wave;
 
-      // 1. 更新左邊資訊欄的即時 KILLS 數據
+      // 2. 更新總擊殺數
       if (dom.liveKills) dom.liveKills.textContent = state.kills;
       
-      // 2. 更新左邊資訊欄的 Wave 進度條數據
+      // 3. 更新剩餘怪物進度條
       if (dom.progressText && dom.progressBar) {
-        dom.progressText.textContent = `${state.spawnedThisWave}/${state.monstersThisWave}`;
-        const progressPct = (state.spawnedThisWave / state.monstersThisWave) * 100;
+        // 剩餘要處理的怪物 = 這波總目標數量 - 已經死掉(被殺/撞家)的數量
+        const remaining = state.monstersThisWave - state.processedThisWave;
+        dom.progressText.textContent = `${remaining}/${state.monstersThisWave}`;
+        
+        // 進度條百分比：剩餘數量佔總數的比例 (一開始100%，慢慢變成0%)
+        const progressPct = Math.max(0, (remaining / state.monstersThisWave) * 100);
         dom.progressBar.style.width = `${progressPct}%`;
       }
     }
@@ -404,6 +579,7 @@
       return Math.max(0.01, state.baseSpeed + (state.wave * 0.02));
     }
 
+    // 將邏輯座標轉換並套用至實際 HTML 元素
     function placeMonster(m){
       if (!m.el) return;
       const p = getPointOnPathFixed(m.t);
@@ -412,6 +588,7 @@
       m.el.style.transform = 'translate(-50%, -50%)';
     }
 
+    // 擊殺時的粒子爆炸特效
     function triggerShatterEffect(x, y, color = '#d97706') {
       if (!dom.track) return;
       for (let i = 0; i < 12; i++) {
@@ -423,6 +600,7 @@
       }
     }
 
+    // 生成新怪物
     function spawnMonster(){
       if (!dom.track) return;
       const word = getWordForGame(state.wave);
@@ -441,11 +619,10 @@
       placeMonster(m);
       state.monsters.push(m);
       
-      // 生成怪物時，同步更新進度條
-      updateHUD();
       pickNextTarget();
     }
 
+    // 智能對焦系統：尋找距離主堡最近的怪物作為輸入目標
     function pickNextTarget(){
       const activeMonsters = state.monsters.filter(m => !m.dying);
       
@@ -455,6 +632,7 @@
         return; 
       }
       
+      // 依進度 t 排列，找最靠近主堡 (t最大的)
       activeMonsters.sort((a, b) => b.t - a.t);
       const nearestTarget = activeMonsters[0];
       
@@ -463,11 +641,13 @@
           state.target.label.className = "text-[11px] font-bold mt-0.5 px-1 py-0.5 border border-black bg-stone-900 text-stone-300 font-mono tracking-wide";
         }
         state.target = nearestTarget;
+        // 把目標怪物掛上閃爍高亮的邊框
         state.target.label.className = "text-[12px] font-black mt-0.5 px-1 py-0.5 border-2 border-amber-600 bg-amber-950 text-amber-400 font-mono tracking-wide shadow-md animate-pulse";
       }
       renderSpectrumHighlight();
     }
 
+    // 渲染正上方文字區的輸入狀態 (正確綠字/錯誤紅字)
     function renderSpectrumHighlight() {
       if (!state.target || !dom.track) return;
       
@@ -483,14 +663,16 @@
         return `<span class="text-stone-400">${char}</span>`;
       }).join('');
 
+      // 加上中文翻譯註解
       if (translations[baseWord]) htmlOutput += `<span class="text-sm text-stone-500 font-bold ml-4 font-sans">/* ${translations[baseWord]} */</span>`;
       dom.wordBox.innerHTML = htmlOutput;
     }
 
+    // 發射防禦子彈
     function fireBulletAt(targetMonster) {
       if (!dom.track || !targetMonster) return;
       
-      targetMonster.dying = true;
+      targetMonster.dying = true; // 標記為死亡，停止移動
 
       const heroRect = dom.heroSprite.getBoundingClientRect();
       const parentRect = dom.track.getBoundingClientRect();
@@ -509,33 +691,44 @@
         x: startX,
         y: startY,
         target: targetMonster,
-        speed: 1.8 
+        speed: 2.5 // 子彈飛行速度
       });
 
       pickNextTarget();
     }
 
+    // 從畫面與記憶體中移除怪物，並處理波次切換
     function removeMonster(m){
       if (m.el) m.el.remove();
       state.monsters = state.monsters.filter(x => x !== m);
       if (state.target === m) state.target = null;
       pickNextTarget();
+
+      // 每當有怪物被處理掉(擊殺或撞主堡)，已處理數量+1，用來倒扣進度條
+      state.processedThisWave++; 
       
+      // 判定是否換波次 (這波該生的怪都生完了 && 場上已經清空)
       if (state.spawnedThisWave >= state.monstersThisWave && state.monsters.length === 0){
         state.wave++; 
-        state.monstersThisWave = 4 + Math.floor(state.wave * 1.2); 
+        state.monstersThisWave = 4 + Math.floor(state.wave * 1.2); // 怪物數量隨波次增加
         state.spawnedThisWave = 0;
-        state.spawnInterval = Math.max(450, state.spawnInterval - 40);
+        state.processedThisWave = 0; // 新的一波，重置進度條與已處理數量
+        // 出怪速度越來越快 (最小極限為 650ms)
+        state.spawnInterval = Math.max(650, state.spawnInterval - 50);
         
         triggerWaveIntro(state.wave);
       }
-      updateHUD();
+      updateHUD(); // 更新進度條
     }
 
+    // ==========================================
+    // 遊戲核心引擎：主迴圈 Game Loop
+    // ==========================================
     function loop(now){
       if (!state || !state.running) return;
       if (state.paused){ state.lastTime = now; rafId = requestAnimationFrame(loop); return; }
       
+      // 1. 計算時間差 Delta Time
       let dt = Math.min(200, now - state.lastTime);
       state.lastTime = now;
 
@@ -544,23 +737,31 @@
         return;
       }
 
+      // 2. 計時器：時間到就生成一隻新怪物
       if ((state.spawnTimer += dt) > state.spawnInterval && state.spawnedThisWave < state.monstersThisWave){
-        state.spawnTimer = 0; state.spawnedThisWave++; spawnMonster();
+        state.spawnTimer = 0; 
+        state.spawnedThisWave++; 
+        spawnMonster();
       }
 
       const speed = currentSpeed();
       
+      // 3. 更新所有怪物的狀態
       for (const m of [...state.monsters]){
-        if (!m.dying) {
-          m.t += speed * dt * 0.0001;
+        if (!m.dying) { 
+          m.t += speed * dt * 0.0001; // 怪物往前邁進
         }
         
+        // 如果怪物走到盡頭 (撞到主堡)
         if (m.t >= DETECT_T){
-          state.hp -= 15; dom.typedInput.value = '';
-          dom.gameScreen.classList.add('damage-flash');
-          setTimeout(() => dom.gameScreen.classList.remove('damage-flash'), 300);
+          state.hp -= 10; // 主堡扣血量
+          dom.typedInput.value = '';
+          dom.gameScreen.classList.add('damage-flash'); // 畫面發紅震動
+          setTimeout(() => dom.gameScreen.classList.remove('damage-flash'), 300); 
+          
           removeMonster(m);
           
+          // 血量歸零：GameOver
           if (state.hp <= 0){
             updateHUD(); state.running = false; cancelAnimationFrame(rafId);
             dom.typedInput.disabled = true;
@@ -572,6 +773,7 @@
         } else placeMonster(m);
       }
 
+      // 4. 更新子彈的飛行軌跡
       const parentRect = dom.track.getBoundingClientRect();
       for (let i = bullets.length - 1; i >= 0; i--) {
         const b = bullets[i];
@@ -591,13 +793,15 @@
         const dist = Math.sqrt(dx * dx + dy * dy);
         const moveDist = b.speed * dt;
 
+        // 如果子彈追上怪物 (命中判定)
         if (dist <= moveDist + 15) {
           triggerShatterEffect(targetX, targetY);
           state.kills++; // 成功消滅，加擊殺數
-          removeMonster(b.target);
+          removeMonster(b.target); // 將怪物消滅
           b.el.remove();
           bullets.splice(i, 1);
         } else {
+          // 子彈繼續飛行
           b.x += (dx / dist) * moveDist;
           b.y += (dy / dist) * moveDist;
           b.el.style.left = `${b.x}px`;
@@ -606,7 +810,8 @@
       }
 
       state.monsters.filter(m => !m.dying).length > 0 ? pickNextTarget() : null;
-      updateHUD();
+      
+      // 5. 要求瀏覽器準備渲染下一張畫面
       rafId = requestAnimationFrame(loop);
     }
 
@@ -623,7 +828,7 @@
       });
 
       // ==========================================
-      // ★ 核心防呆與精準單字紅字機制
+      // 精準單字紅字機制監聽
       // ==========================================
       dom.typedInput.addEventListener('input', () => {
         if (!state?.running || state.paused || !state.target || state.waveIntroActive) return;
@@ -631,19 +836,22 @@
         const typed = dom.typedInput.value.toLowerCase();
         const targetStr = state.target.word.toLowerCase();
 
+        // 檢查玩家輸入的前綴是否正確
         if (targetStr.startsWith(typed)) {
           state.errorIndex = -1; 
+          // 整個字串匹配完成 (成功打完單字)
           if (typed === targetStr) {
             fireBulletAt(state.target);
             dom.typedInput.value = ''; 
             updateHUD();
           }
         } else {
+          // 輸入錯誤了！
           state.errorIndex = typed.length - 1; 
           
           dom.wordBox.classList.remove('error-shake');
           void dom.wordBox.offsetWidth; 
-          dom.wordBox.classList.add('error-shake');
+          dom.wordBox.classList.add('error-shake'); // 單字框左右震動
           
           setTimeout(() => {
             dom.wordBox.classList.remove('error-shake');
@@ -651,6 +859,7 @@
             renderSpectrumHighlight();
           }, 300);
 
+          // 防止錯誤字元輸入
           dom.typedInput.value = typed.slice(0, -1);
           updateHUD();
         }
@@ -671,6 +880,7 @@
         }
       });
 
+      // 暫停按鈕邏輯
       dom.pauseBtn.addEventListener('click', () => {
         if (!state?.running || state.waveIntroActive) return;
         state.paused = !state.paused;
